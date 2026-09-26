@@ -1,63 +1,54 @@
 # Product Manager API
 
-API REST para cadastro de produtos, desenvolvida com Java e Spring Boot. Atualmente, o endpoint de criação persiste produtos no banco de dados; o endpoint de listagem ainda retorna uma mensagem fixa.
+API REST em desenvolvimento para cadastro e gerenciamento de produtos, construída com Java e Spring Boot. O projeto organiza o processamento das requisições em camadas e usa Spring Data JPA para persistir a entidade `Produto` em MySQL.
+
+## Objetivo
+
+O objetivo é disponibilizar operações de backend para trabalhar com produtos. No estado atual, a API recebe e persiste um novo produto. A rota de listagem está criada, mas ainda retorna uma mensagem fixa em vez de consultar os registros.
+
+## Funcionalidades implementadas
+
+- Recebimento de um produto em JSON por meio de `POST /produtos`.
+- Persistência do produto através do service e do repositório JPA.
+- Geração do identificador do produto pelo banco, conforme o mapeamento da entidade.
+- Operações de consulta por todos os produtos e por ID disponíveis na camada service, ainda sem rotas correspondentes funcionais no controller.
 
 ## Tecnologias
 
-- Java 21
-- Spring Boot 4.1.1
-- Spring Web MVC
-- Spring Data JPA e Hibernate
-- MySQL Connector/J
-- Bean Validation (dependência configurada; regras de validação ainda não identificadas no modelo ou no controller)
-- Maven, com Maven Wrapper incluído
+| Tecnologia | Uso no projeto |
+| --- | --- |
+| Java 21 | Linguagem e versão configurada para compilação |
+| Spring Boot 4.1.1 | Inicialização e configuração da aplicação |
+| Spring Web MVC | Endpoints HTTP |
+| Spring Data JPA | Abstração de persistência e repositório |
+| Hibernate | Implementação JPA usada pelo starter de Spring Data JPA |
+| MySQL Connector/J | Conexão JDBC com MySQL |
+| Bean Validation | Dependência incluída; não há regras de validação aplicadas ao model ou às requisições atualmente |
+| Maven | Gerenciamento de dependências e build; Maven Wrapper incluído |
 
-## Organização
+## Arquitetura
 
-- **Controller:** recebe as requisições HTTP em `ProdutoController` e encaminha a criação ao service.
-- **Service:** concentra operações de produtos em `ProdutoService`, incluindo persistência e métodos de consulta disponíveis.
-- **Repository:** `ProdutoRepository` estende `JpaRepository` para acesso a dados com JPA.
-- **Model/Entity:** `Produto` representa a entidade persistida na tabela `produto`, com os campos `id`, `nome`, `preco` e `quantidade`.
-- **DTO:** não há DTO identificado; os endpoints usam diretamente o model `Produto`.
+O código está separado por responsabilidade:
 
-## Pré-requisitos
+| Camada | Responsabilidade atual |
+| --- | --- |
+| `controller` | Mapeia as rotas de produtos e encaminha a criação ao service. |
+| `service` | Implementa operações de persistência e consulta usando o repositório. |
+| `repository` | Estende `JpaRepository<Produto, Integer>` para acesso aos dados. |
+| `model` | Define `Produto` como entidade JPA mapeada para a tabela `produto`. |
 
-- JDK 21
-- MySQL acessível localmente
+O model contém `id`, `nome`, `preco` (`BigDecimal`) e `quantidade`. O identificador usa geração `IDENTITY`. Não há DTOs no projeto; o endpoint de criação recebe e retorna diretamente a entidade `Produto`.
 
-## Banco de dados e variável de ambiente
+## Endpoints atuais
 
-A configuração atual conecta ao MySQL em `127.0.0.1:3306`, usando o banco `product_manager` e o usuário `root`. A senha é lida da variável de ambiente `DB_SENHA`; não armazene uma senha no README ou no controle de versão.
+| Método | Rota | Comportamento atual |
+| --- | --- | --- |
+| `POST` | `/produtos` | Persiste o produto recebido no corpo JSON e retorna a entidade salva. |
+| `GET` | `/produtos` | Retorna o texto `Listando produtos`; não consulta o repositório. |
 
-Crie o banco configurado, caso ainda não exista:
+### Exemplo: criar produto
 
-```sql
-CREATE DATABASE product_manager;
-```
-
-No PowerShell, defina a variável para a sessão atual do terminal, substituindo o valor pelo segredo local:
-
-```powershell
-$env:DB_SENHA = "sua-senha-local"
-```
-
-## Executar localmente
-
-Com o MySQL em execução, o banco criado e `DB_SENHA` definida no terminal:
-
-```powershell
-.\mvnw.cmd spring-boot:run
-```
-
-A aplicação usa a porta padrão do Spring Boot (`8080`).
-
-## Endpoints disponíveis
-
-### `POST /produtos`
-
-Cadastra um produto usando o corpo JSON abaixo. O identificador é gerado pelo banco.
-
-Requisição:
+Corpo da requisição para `POST /produtos`:
 
 ```json
 {
@@ -67,7 +58,7 @@ Requisição:
 }
 ```
 
-Resposta representativa, com o `id` gerado na persistência:
+Resposta representativa de `POST /produtos` (o valor de `id` é gerado pelo banco):
 
 ```json
 {
@@ -78,15 +69,20 @@ Resposta representativa, com o `id` gerado na persistência:
 }
 ```
 
-### `GET /produtos`
+## Conceitos de backend praticados
 
-Retorna atualmente o texto fixo `Listando produtos`. Embora o service tenha um método para buscar produtos, o controller ainda não o utiliza neste endpoint.
+- Separação de responsabilidades entre controller, service, repository e model.
+- Mapeamento de entidade e identificador com Jakarta Persistence.
+- Injeção de dependência por construtor.
+- Persistência baseada em repositório com Spring Data JPA.
+- Recebimento e resposta de dados JSON em endpoints HTTP.
+- Configuração de credencial do banco por variável de ambiente.
 
-## Estrutura de pastas
+## Estrutura do projeto
 
 ```text
 .
-├── .mvn/wrapper/                 # Configuração do Maven Wrapper
+├── .mvn/wrapper/
 ├── src/
 │   ├── main/
 │   │   ├── java/com/luan/product_manager_api/
@@ -99,4 +95,23 @@ Retorna atualmente o texto fixo `Listando produtos`. Embora o service tenha um m
 │   │       └── application.properties
 │   └── test/java/com/luan/product_manager_api/
 └── pom.xml
+```
+
+## Status e próximos passos
+
+**Status:** projeto em desenvolvimento. O cadastro de produto está conectado à persistência; a rota `GET /produtos` ainda é provisória. Existe um teste de inicialização do contexto Spring.
+
+Possíveis evoluções, ainda não implementadas:
+
+- Conectar `GET /produtos` à consulta de produtos do service.
+- Criar rotas para consulta de produto por ID, atualização e remoção.
+- Aplicar regras de Bean Validation às entradas.
+- Adicionar testes para as operações e os endpoints.
+
+## Como executar
+
+Requer JDK 21 e MySQL. A configuração atual usa o banco `product_manager` em `127.0.0.1:3306`, com usuário `root`; a senha deve estar definida na variável de ambiente `DB_SENHA`. Com o banco disponível e a variável configurada, inicie pelo Maven Wrapper:
+
+```powershell
+.\mvnw.cmd spring-boot:run
 ```
